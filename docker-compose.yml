@@ -42,7 +42,8 @@ services:
     image: cleanstart/minio:latest
     container_name: de_minio
     user: "0:0"
-    command: -c 'minio server /data --console-address ":9001"'
+    # command: -c 'minio server /data --console-address ":9001"'
+    command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
