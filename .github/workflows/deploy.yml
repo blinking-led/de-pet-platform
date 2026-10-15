@@ -1,0 +1,27 @@
+name: Deploy Data Platform
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync files to target folder
+        run: |
+          rsync -av --exclude='.git' ./ /data/platform/
+
+      - name: Deploy containers via Docker Compose
+        run: |
+          cd /data/platform
+          docker compose pull
+          docker compose up -d --remove-orphans
+
+      - name: Show running containers
+        run: |
+          docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
