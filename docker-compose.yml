@@ -39,7 +39,7 @@ services:
     restart: always
   
   minio:
-    image: cgr.dev/chainguard/minio:latest
+    image: cleanstart/minio:latest
     container_name: de_minio
     command: server /data --console-address ":9001"
     environment:
