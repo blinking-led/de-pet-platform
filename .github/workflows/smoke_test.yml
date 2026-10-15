@@ -1,0 +1,27 @@
+name: Smoke Test CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  verify-environment:
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check server hostname and CPU
+        run: |
+          echo "=== Host Information ==="
+          hostname
+          uname -a
+          lscpu | grep "Model name"
+
+      - name: Test Docker availability
+        run: |
+          echo "=== Testing Docker ==="
+          docker --version
+          docker compose version
+          docker info | grep "Docker Root Dir"
