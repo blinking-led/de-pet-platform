@@ -19,7 +19,8 @@ x-airflow-common: &airflow-common
     postgres:
       condition: service_healthy
 
-producer:
+services:  
+  producer:
     build:
       context: ./services/producer
       dockerfile: Dockerfile
@@ -39,8 +40,7 @@ producer:
           memory: 256M
     networks:
       - platform_network
-
-services:  
+      
   postgres:
     image: postgres:16-alpine
     container_name: de_postgres
