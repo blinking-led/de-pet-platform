@@ -133,8 +133,8 @@ services:
       container_name: de_consumer
       restart: unless-stopped
       depends_on:
-        - de_redpanda
-        - de_minio
+        - redpanda
+        - minio
       environment:
         BOOTSTRAP_SERVERS: "de_redpanda:29092"
         TOPIC_NAME: "transactions"
