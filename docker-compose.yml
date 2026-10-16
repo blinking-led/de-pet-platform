@@ -19,6 +19,27 @@ x-airflow-common: &airflow-common
     postgres:
       condition: service_healthy
 
+producer:
+    build:
+      context: ./services/producer
+      dockerfile: Dockerfile
+    container_name: producer
+    restart: unless-stopped
+    depends_on:
+      - redpanda
+    environment:
+      BOOTSTRAP_SERVERS: "redpanda:29092"
+      TOPIC_NAME: "transactions"
+      TARGET_RPS: 1000
+      BATCH_BURST: 50
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    networks:
+      - platform_network
+
 services:  
   postgres:
     image: postgres:16-alpine
