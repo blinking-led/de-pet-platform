@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta
 import io
+import os
 from typing import List, Dict, Any
 
 from airflow.decorators import dag, task
 from airflow.providers.postgres.hooks.postgres import PostgresHook
+import psycopg2
 import boto3
 from botocore.config import Config
 import pandas as pd
@@ -15,6 +17,25 @@ S3_SECRET_KEY = "minioadmin_secure_pass"
 S3_BUCKET_NAME = "lakehouse"
 
 POSTGRES_CONN_ID = "postgres_default"
+POSTGRES_HOST = os.getenv("POSTGRES_HOST", "postgres")
+POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
+POSTGRES_USER = os.getenv("POSTGRES_USER", "airflow")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "airflow_secure_pass")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "airflow")
+
+def get_pg_connection():
+    """Fallback фабрика: использует Airflow Hook либо прямое соединение с PostgreSQL."""
+    try:
+        hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        return hook.get_conn()
+    except Exception:
+        return psycopg2.connect(
+            host=POSTGRES_HOST,
+            port=POSTGRES_PORT,
+            user=POSTGRES_USER,
+            password=POSTGRES_PASSWORD,
+            dbname=POSTGRES_DB
+        )
 
 default_args = {
     'owner': 'data_engineer',
@@ -37,7 +58,7 @@ def lakehouse_etl():
     @task
     def init_gold_schema() -> None:
         """DDL инициализация схемы и витрины с поддержкой атомарного UPSERT."""
-        hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        # hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
         ddl_query = """
         CREATE SCHEMA IF NOT EXISTS gold;
 
@@ -55,7 +76,14 @@ def lakehouse_etl():
             PRIMARY KEY (window_start, store_id, category, brand)
         );
         """
-        hook.run(ddl_query)
+        # hook.run(ddl_query)
+        conn = get_pg_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(ddl_query)
+            conn.commit()
+        finally:
+            conn.close()
 
     @task
     def extract_and_transform_silver(**context) -> List[Dict[str, Any]]:
@@ -151,7 +179,7 @@ def lakehouse_etl():
         if not records:
             return
 
-        hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
+        # hook = PostgresHook(postgres_conn_id=POSTGRES_CONN_ID)
 
         upsert_query = """
         INSERT INTO gold.mart_hourly_sales (
@@ -173,7 +201,8 @@ def lakehouse_etl():
             updated_at = CURRENT_TIMESTAMP;
         """
 
-        conn = hook.get_conn()
+        # conn = hook.get_conn()
+        conn = get_pg_connection()
         cursor = conn.cursor()
         try:
             cursor.executemany(upsert_query, records)
