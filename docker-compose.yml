@@ -105,6 +105,42 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8-lts
+    container_name: de_clickhouse
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: lakehouse
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-ch_admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:?ClickHouse password is required}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"  # HTTP Interface (dbt, S3 engine, Ping)
+      - "9000:9000"  # Native TCP Interface (clickhouse-client, ETL)
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
+        reservations:
+          memory: 1024M
+    volumes:
+      - /data/clickhouse/data:/var/lib/clickhouse
+      - /data/clickhouse/logs:/var/log/clickhouse-server
+      - /data/clickhouse/config.d/tuning.xml:/etc/clickhouse-server/config.d/tuning.xml:ro
+      - /data/clickhouse/users.d/resource_limits.xml:/etc/clickhouse-server/users.d/resource_limits.xml:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8123/ping || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - default
+
   producer:
     build:
       context: ./services/producer
