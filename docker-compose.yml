@@ -9,14 +9,21 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: 2
     AIRFLOW__CORE__PARALLELISM: 4
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    _PIP_ADDITIONAL_REQUIREMENTS: "dbt-core==1.12.6 dbt-clickhouse==1.10.3"
+    CLICKHOUSE_HOST: clickhouse
+    CLICKHOUSE_USER: ${CLICKHOUSE_USER:-ch_admin}
+    CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
     - ./config:/opt/airflow/config
+    - ./dbt:/opt/airflow/dbt
   user: "${AIRFLOW_UID}:0"
   depends_on:
     postgres:
+      condition: service_healthy
+    clickhouse:
       condition: service_healthy
 
 services:        
