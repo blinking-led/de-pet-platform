@@ -106,7 +106,7 @@ services:
         condition: service_completed_successfully
 
   clickhouse:
-    image: clickhouse/clickhouse-server:24.8-lts
+    image: clickhouse/clickhouse-server:24.8
     container_name: de_clickhouse
     restart: unless-stopped
     environment:
