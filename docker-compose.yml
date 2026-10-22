@@ -116,7 +116,7 @@ services:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     ports:
       - "8123:8123"  # HTTP Interface (dbt, S3 engine, Ping)
-      - "9000:9000"  # Native TCP Interface (clickhouse-client, ETL)
+      - "9010:9000"  # Native TCP Interface (clickhouse-client, ETL)
     ulimits:
       nofile:
         soft: 262144
