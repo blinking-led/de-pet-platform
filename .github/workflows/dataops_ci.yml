@@ -1,0 +1,42 @@
+name: DataOps CI Gate
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'dbt/**'
+      - '.github/workflows/dataops_ci.yml'
+      - '.sqlfluff'
+  push:
+    branches: [ main ]
+    paths:
+      - 'dbt/**'
+      - '.github/workflows/dataops_ci.yml'
+      - '.sqlfluff'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-validate:
+    runs-on: self-hosted
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Lint dbt SQL Models (SQLFluff)
+        run: |
+          source /data/platform/dbt_venv/bin/activate
+          # Проверяем только каталог моделей; выход с ошибкой при нарушении code style
+          sqlfluff lint dbt/models --config .sqlfluff
+
+      - name: Validate dbt DAG & Jinja Compilation
+        run: |
+          source /data/platform/dbt_venv/bin/activate
+          cd dbt
+          # dbt compile проверяет синтаксис SQL, Jinja-компиляцию и связи refs без записи данных
+          dbt compile --target dev --profiles-dir .
